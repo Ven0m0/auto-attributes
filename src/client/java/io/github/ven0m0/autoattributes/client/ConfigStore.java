@@ -44,6 +44,7 @@ public final class ConfigStore {
     }
   }
 
+  /** Applies the config immediately and writes it to disk; called when the config screen closes. */
   public static void save(ModConfig config) {
     ModConfig clean = config.sanitized();
     current = clean;

@@ -12,6 +12,7 @@ class AttackTimingTest {
     AttackTiming t = new AttackTiming();
     t.nextTick();
     assertEquals(new AttackTiming.Step(false, -1), t.advance(3));
+    assertFalse(t.showing());
   }
 
   @Test
@@ -19,10 +20,12 @@ class AttackTimingTest {
     AttackTiming t = new AttackTiming();
     t.nextTick();
     t.showUntilRestore(8, 2, 2);
+    assertTrue(t.showing());
     t.nextTick();
     assertTrue(t.advance(8).blocked());
     t.nextTick();
     assertEquals(new AttackTiming.Step(false, 2), t.advance(8));
+    assertFalse(t.showing());
     assertEquals(new AttackTiming.Step(false, -1), t.advance(2));
   }
 
@@ -33,6 +36,7 @@ class AttackTimingTest {
     t.showUntilRestore(8, 2, 1);
     t.nextTick();
     assertEquals(new AttackTiming.Step(false, -1), t.advance(5));
+    assertFalse(t.showing());
     assertFalse(t.advance(8).blocked());
   }
 

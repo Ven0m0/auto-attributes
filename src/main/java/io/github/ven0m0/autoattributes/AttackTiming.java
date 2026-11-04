@@ -48,6 +48,11 @@ public final class AttackTiming {
     restoreAtTick = tick + showTicks;
   }
 
+  /** True while a shown item is selected and its restore has not run yet. */
+  public boolean showing() {
+    return restoreSlot >= 0;
+  }
+
   public void markLunge() {
     lastLungeTick = tick;
   }

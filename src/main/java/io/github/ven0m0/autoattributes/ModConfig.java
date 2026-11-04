@@ -9,7 +9,7 @@ package io.github.ven0m0.autoattributes;
 public record ModConfig(Swap swap, Lunge lunge) {
   public static final int MAX_SLOT = 8;
   public static final int MAX_DELAY_TICKS = 40;
-  public static final int MAX_SHOW_TICKS = 10;
+  public static final int MAX_SHOW_TICKS = 20;
 
   /** {@code showTicks} is how many ticks the target weapon stays selected after the hit. */
   public record Swap(boolean enabled, WeaponType target, int targetSlot, int showTicks) {}
@@ -19,7 +19,7 @@ public record ModConfig(Swap swap, Lunge lunge) {
       boolean enabled, int spearSlot, int carrierSlot, int delayTicks, int showTicks) {}
 
   public static ModConfig defaults() {
-    return new ModConfig(new Swap(true, WeaponType.MACE, 8, 1), new Lunge(true, 1, -1, 0, 1));
+    return new ModConfig(new Swap(true, WeaponType.MACE, 8, 5), new Lunge(true, 1, -1, 0, 1));
   }
 
   /** Slot as shown in the UI: 0 means auto/held, 1-9 are hotbar slots. */

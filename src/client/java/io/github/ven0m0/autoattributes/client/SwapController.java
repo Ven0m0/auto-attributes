@@ -29,15 +29,22 @@ public final class SwapController {
 
   private final KeyMapping swapKey;
   private final KeyMapping lungeKey;
-  private final AttackTiming timing = new AttackTiming();
+  // Static so the first-person render mixin can ask whether an attack is being shown; only one
+  // controller is ever created.
+  private static final AttackTiming TIMING = new AttackTiming();
 
   public SwapController(KeyMapping swapKey, KeyMapping lungeKey) {
     this.swapKey = swapKey;
     this.lungeKey = lungeKey;
   }
 
+  /** True while a swapped-in weapon is being held for display after its attack. */
+  public static boolean showingAttack() {
+    return TIMING.showing();
+  }
+
   public void tick(Minecraft mc) {
-    timing.nextTick();
+    TIMING.nextTick();
 
     // Drain presses first so keys pressed while a screen is open do not fire later.
     boolean swapPressed = false;
@@ -47,7 +54,7 @@ public final class SwapController {
 
     LocalPlayer player = mc.player;
     AttackTiming.Step step =
-        timing.advance(player != null ? player.getInventory().getSelectedSlot() : -1);
+        TIMING.advance(player != null ? player.getInventory().getSelectedSlot() : -1);
     if (step.blocked()) {
       return;
     }
@@ -94,7 +101,7 @@ public final class SwapController {
       inv.setSelectedSlot(lunge.carrierSlot());
       return;
     }
-    if (!timing.lungeReady(lunge.delayTicks())) {
+    if (!TIMING.lungeReady(lunge.delayTicks())) {
       return;
     }
     if (player.getFoodData().getFoodLevel() < MIN_LUNGE_FOOD
@@ -117,10 +124,10 @@ public final class SwapController {
     }
     if (spear == held) {
       if (((MinecraftAccessor) mc).autoattributes$startAttack()) {
-        timing.markLunge();
+        TIMING.markLunge();
       }
     } else if (showAttack(mc, inv, spear, held, lunge.showTicks())) {
-      timing.markLunge();
+      TIMING.markLunge();
     }
   }
 
@@ -138,7 +145,7 @@ public final class SwapController {
       accepted = ((MinecraftAccessor) mc).autoattributes$startAttack();
     } finally {
       if (accepted) {
-        timing.showUntilRestore(shown, held, showTicks);
+        TIMING.showUntilRestore(shown, held, showTicks);
       } else {
         inv.setSelectedSlot(held);
       }
