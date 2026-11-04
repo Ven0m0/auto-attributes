@@ -2,6 +2,8 @@ package io.github.ven0m0.autoattributes.client;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
+import io.github.ven0m0.autoattributes.ModConfig;
+import io.github.ven0m0.autoattributes.WeaponType;
 import java.util.Locale;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
@@ -16,16 +18,17 @@ public class ModMenuIntegration implements ModMenuApi {
   }
 
   private static Screen buildScreen(Screen parent) {
-    ModConfig current = ModConfig.get();
+    ModConfig current = ConfigStore.get();
     ModConfig.Swap swap = current.swap();
     boolean[] swapEnabled = {swap.enabled()};
     WeaponType[] swapTarget = {swap.target()};
-    int[] swapSlot = {swap.targetSlot() + 1};
+    int[] swapSlot = {ModConfig.toUiSlot(swap.targetSlot())};
+    int[] swapShowTicks = {swap.showTicks()};
 
     ModConfig.Lunge lunge = current.lunge();
     boolean[] lungeEnabled = {lunge.enabled()};
-    int[] spearSlot = {lunge.spearSlot() + 1};
-    int[] carrierSlot = {lunge.carrierSlot() + 1}; // 0 = currently held
+    int[] spearSlot = {ModConfig.toUiSlot(lunge.spearSlot())};
+    int[] carrierSlot = {ModConfig.toUiSlot(lunge.carrierSlot())}; // 0 = currently held
     int[] delay = {lunge.delayTicks()};
     int[] showTicks = {lunge.showTicks()};
 
@@ -34,13 +37,17 @@ public class ModMenuIntegration implements ModMenuApi {
             .setParentScreen(parent)
             .setTitle(Component.translatable("autoattributes.config.title"))
             .setSavingRunnable(() ->
-                ModConfig.save(
+                ConfigStore.save(
                     new ModConfig(
-                        new ModConfig.Swap(swapEnabled[0], swapTarget[0], swapSlot[0] - 1),
+                        new ModConfig.Swap(
+                            swapEnabled[0],
+                            swapTarget[0],
+                            ModConfig.fromUiSlot(swapSlot[0]),
+                            swapShowTicks[0]),
                         new ModConfig.Lunge(
                             lungeEnabled[0],
-                            spearSlot[0] - 1,
-                            carrierSlot[0] - 1,
+                            ModConfig.fromUiSlot(spearSlot[0]),
+                            ModConfig.fromUiSlot(carrierSlot[0]),
                             delay[0],
                             showTicks[0]))));
     ConfigEntryBuilder entries = builder.entryBuilder();
@@ -68,9 +75,23 @@ public class ModMenuIntegration implements ModMenuApi {
     swapCat.addEntry(
         entries
             .startIntSlider(
-                Component.translatable("autoattributes.config.target_slot"), swapSlot[0], 0, 9)
-            .setDefaultValue(swapDef.targetSlot() + 1)
+                Component.translatable("autoattributes.config.target_slot"),
+                swapSlot[0],
+                0,
+                ModConfig.toUiSlot(ModConfig.MAX_SLOT))
+            .setDefaultValue(ModConfig.toUiSlot(swapDef.targetSlot()))
             .setSaveConsumer(v -> swapSlot[0] = v)
+            .build());
+    swapCat.addEntry(
+        entries
+            .startIntSlider(
+                Component.translatable("autoattributes.config.swap_show_ticks"),
+                swapShowTicks[0],
+                1,
+                ModConfig.MAX_SHOW_TICKS)
+            .setDefaultValue(swapDef.showTicks())
+            .setTooltip(Component.translatable("autoattributes.config.swap_show_ticks.tooltip"))
+            .setSaveConsumer(v -> swapShowTicks[0] = v)
             .build());
 
     ModConfig.Lunge def = ModConfig.defaults().lunge();
@@ -86,15 +107,21 @@ public class ModMenuIntegration implements ModMenuApi {
     lungeCat.addEntry(
         entries
             .startIntSlider(
-                Component.translatable("autoattributes.config.spear_slot"), spearSlot[0], 0, 9)
-            .setDefaultValue(def.spearSlot() + 1)
+                Component.translatable("autoattributes.config.spear_slot"),
+                spearSlot[0],
+                0,
+                ModConfig.toUiSlot(ModConfig.MAX_SLOT))
+            .setDefaultValue(ModConfig.toUiSlot(def.spearSlot()))
             .setSaveConsumer(v -> spearSlot[0] = v)
             .build());
     lungeCat.addEntry(
         entries
             .startIntSlider(
-                Component.translatable("autoattributes.config.carrier_slot"), carrierSlot[0], 0, 9)
-            .setDefaultValue(def.carrierSlot() + 1)
+                Component.translatable("autoattributes.config.carrier_slot"),
+                carrierSlot[0],
+                0,
+                ModConfig.toUiSlot(ModConfig.MAX_SLOT))
+            .setDefaultValue(ModConfig.toUiSlot(def.carrierSlot()))
             .setSaveConsumer(v -> carrierSlot[0] = v)
             .build());
     lungeCat.addEntry(

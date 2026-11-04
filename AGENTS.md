@@ -16,22 +16,25 @@ Run `spotlessApply` before committing; `spotlessCheck` is part of `build` and fa
 
 ## Layout
 
-- `src/main/java/.../SlotResolver.java`: Minecraft-free logic so it is unit testable. Keep new pure logic here.
+- `src/main/java/.../`: Minecraft-free logic so it is unit testable. Keep new pure logic here.
+  - `AttackTiming`: tick clock, show-then-restore window, lunge rate limit.
+  - `SlotResolver`: configured slot, then hotbar scan (first match, or best score via `resolveBest`).
+  - `ModConfig`: immutable records, defaults, `sanitized()` clamping, 0/1-based UI slot helpers. `WeaponType` is a plain enum.
 - `src/client/java/.../client/`: everything that touches Minecraft classes.
   - `AutoAttributesClient`: entrypoint, registers keybinds (unbound by default) and the tick hook.
-  - `SwapController`: per-tick combo and lunge logic (runs at `START_CLIENT_TICK`).
-  - `ModConfig`: immutable records, Gson, `config/autoattributes.json`. Always go through `sanitized()`.
-  - `ModMenuIntegration`: Cloth Config screen.
+  - `SwapController`: thin adapter that feeds game state to `AttackTiming`/`SlotResolver` each tick (runs at `START_CLIENT_TICK`).
+  - `ConfigStore`: Gson read/write of `config/autoattributes.json`; always goes through `sanitized()`.
+  - `WeaponMatcher`: maps `WeaponType` to item tags.
+  - `ModMenuIntegration`: Cloth Config screen; take slot ranges and conversions from `ModConfig`.
   - `mixin/`: accessors for `Minecraft` and `MultiPlayerGameMode` internals.
 - Split source sets (`splitEnvironmentSourceSets()`): `main` cannot reference `client` classes.
-- Tests: `src/test/java`, JUnit 5 (`SlotResolverTest` is the pattern).
+- Tests: `src/test/java`, JUnit 5 (`SlotResolverTest` is the pattern; `AttackTimingTest`, `ModConfigTest`).
 
 ## Gotchas
 
 - Slots are 0-based in code and JSON, 1-9 in the UI. `carrierSlot == -1` means "currently held slot".
-- The attribute swap must stay inside one tick: select target slot, flush the slot packet, attack, restore the original slot. Do not split it across ticks or the enchantment trick breaks.
-- The lunge deliberately does the opposite: it attacks with the spear selected and restores the original slot `showTicks` ticks later (skipped if the player scrolled away), so the spear is visible to anticheats.
-- Config is hand-editable, so any new field needs a default and clamping in `sanitized()`.
+- Swap and lunge share `showAttack`: select the target slot, flush the slot packet and attack in the same tick (the enchantment trick needs the attack to happen with the target held), then restore the original slot `showTicks` ticks later (skipped if the player scrolled away) so the item is visible to anticheats. Never move the attack itself to a later tick.
+- Config is hand-editable, so any new field needs a default and clamping in `ModConfig.sanitized()` (and a range test in `ModConfigTest`).
 - Java 25 target; Minecraft 26.3 uses Mojang mappings names (`Identifier`, `KeyMapping`), not Yarn. Check names against the current game version before assuming an API exists.
 - `fabric_api_version` is pinned to the 26.3 build and Renovate updates for it are disabled; do not bump it to a 26.4 build.
 - Dependency versions live in `gradle.properties`, not `build.gradle`.

@@ -12,7 +12,7 @@ public class AutoAttributesClient implements ClientModInitializer {
 
   @Override
   public void onInitializeClient() {
-    ModConfig.load();
+    ConfigStore.load();
 
     KeyMapping.Category category =
         KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));

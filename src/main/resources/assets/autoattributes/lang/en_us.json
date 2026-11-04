@@ -13,6 +13,8 @@
   "autoattributes.config.carrier_slot": "Carrier slot (0 = currently held)",
   "autoattributes.config.delay": "Extra delay (ticks)",
   "autoattributes.config.delay.tooltip": "0 = as fast as the carrier's attack cooldown allows.",
+  "autoattributes.config.swap_show_ticks": "Weapon visible (ticks)",
+  "autoattributes.config.swap_show_ticks.tooltip": "How long the swapped-to weapon stays selected after the hit. 1 = shortest; higher may help with strict anticheats.",
   "autoattributes.config.show_ticks": "Spear visible (ticks)",
   "autoattributes.config.show_ticks.tooltip": "How long the spear stays selected after a lunge. 1 = shortest; higher may help with strict anticheats.",
 

@@ -1,6 +1,9 @@
 package io.github.ven0m0.autoattributes.client;
 
+import io.github.ven0m0.autoattributes.AttackTiming;
+import io.github.ven0m0.autoattributes.ModConfig;
 import io.github.ven0m0.autoattributes.SlotResolver;
+import io.github.ven0m0.autoattributes.WeaponType;
 import io.github.ven0m0.autoattributes.client.mixin.MinecraftAccessor;
 import io.github.ven0m0.autoattributes.client.mixin.MultiPlayerGameModeAccessor;
 import net.minecraft.client.KeyMapping;
@@ -14,11 +17,11 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.HitResult;
 
 /**
- * Runs at the start of each client tick, before vanilla handles input. The attribute swap selects
- * the target slot, flushes the slot packet, attacks, and selects the original slot again, all
- * inside one tick, so the server applies the target item's enchantments to the held item's attack.
- * The lunge instead keeps the spear selected for a few ticks after the jab, so the slot change is
- * visible to the server like a human swap rather than an instantaneous flicker.
+ * Runs at the start of each client tick, before vanilla handles input. Both the attribute swap and
+ * the lunge select the target slot, flush the slot packet and attack inside one tick, then keep the
+ * target selected for a few ticks before restoring the original slot, so the slot change is visible
+ * to the server like a human swap rather than an instantaneous flicker. All tick bookkeeping lives
+ * in {@link AttackTiming}; this class only reads and writes the real game state.
  */
 public final class SwapController {
   /** Food level below which sprinting (and therefore lunging) is impossible. */
@@ -26,12 +29,7 @@ public final class SwapController {
 
   private final KeyMapping swapKey;
   private final KeyMapping lungeKey;
-  private long tickCount;
-  private long lastLungeTick = Long.MIN_VALUE / 2;
-  // Pending lunge restore; restoreSlot < 0 means none.
-  private int restoreSlot = -1;
-  private int spearShownSlot;
-  private long restoreAtTick;
+  private final AttackTiming timing = new AttackTiming();
 
   public SwapController(KeyMapping swapKey, KeyMapping lungeKey) {
     this.swapKey = swapKey;
@@ -39,7 +37,7 @@ public final class SwapController {
   }
 
   public void tick(Minecraft mc) {
-    tickCount++;
+    timing.nextTick();
 
     // Drain presses first so keys pressed while a screen is open do not fire later.
     boolean swapPressed = false;
@@ -48,22 +46,20 @@ public final class SwapController {
     }
 
     LocalPlayer player = mc.player;
-    if (restoreSlot >= 0) {
-      if (tickCount < restoreAtTick) {
-        return;
-      }
-      // Skip the restore if the player scrolled away meanwhile; do not fight manual input.
-      if (player != null && player.getInventory().getSelectedSlot() == spearShownSlot) {
-        player.getInventory().setSelectedSlot(restoreSlot);
-      }
-      restoreSlot = -1;
+    AttackTiming.Step step =
+        timing.advance(player != null ? player.getInventory().getSelectedSlot() : -1);
+    if (step.blocked()) {
+      return;
+    }
+    if (step.restoreTo() >= 0) {
+      player.getInventory().setSelectedSlot(step.restoreTo());
     }
 
     if (player == null || mc.gameMode == null || mc.gui.screen() != null || player.isUsingItem()) {
       return;
     }
 
-    ModConfig config = ModConfig.get();
+    ModConfig config = ConfigStore.get();
     if (swapPressed && config.swap().enabled()) {
       runSwap(mc, player, config.swap());
       return;
@@ -83,10 +79,10 @@ public final class SwapController {
     int target =
         SlotResolver.resolve(
             swap.targetSlot(),
-            i -> swap.target().matches(inv.getItem(i)),
+            i -> WeaponMatcher.matches(swap.target(), inv.getItem(i)),
             Inventory.getSelectionSize());
     if (target >= 0 && target != held) {
-      swapAttack(mc, inv, target, held);
+      showAttack(mc, inv, target, held, swap.showTicks());
     }
   }
 
@@ -98,7 +94,7 @@ public final class SwapController {
       inv.setSelectedSlot(lunge.carrierSlot());
       return;
     }
-    if (tickCount - lastLungeTick < lunge.delayTicks() + 1L) {
+    if (!timing.lungeReady(lunge.delayTicks())) {
       return;
     }
     if (player.getFoodData().getFoodLevel() < MIN_LUNGE_FOOD
@@ -113,83 +109,53 @@ public final class SwapController {
       return;
     }
 
-    int spear = findSpear(mc, inv, lunge.spearSlot());
+    int spear =
+        SlotResolver.resolveBest(
+            lunge.spearSlot(), i -> spearScore(mc, inv.getItem(i)), Inventory.getSelectionSize());
     if (spear < 0) {
       return;
     }
-    lungeAttack(mc, inv, spear, held, lunge.showTicks());
+    if (spear == held) {
+      if (((MinecraftAccessor) mc).autoattributes$startAttack()) {
+        timing.markLunge();
+      }
+    } else if (showAttack(mc, inv, spear, held, lunge.showTicks())) {
+      timing.markLunge();
+    }
   }
 
   /**
-   * Attacks with the spear and leaves it selected until a later tick. A jab vanilla rejected is
-   * restored at once, since showing a spear that did nothing only looks odd.
+   * Selects {@code shown}, attacks in the same tick, and keeps it selected until {@code showTicks}
+   * later. The attack itself still happens with the shown item held, so its enchantments apply. A
+   * rejected attack restores the slot at once, since showing an item that did nothing only looks
+   * odd.
    */
-  private void lungeAttack(Minecraft mc, Inventory inv, int spear, int held, int showTicks) {
-    if (spear == held) {
-      if (((MinecraftAccessor) mc).autoattributes$startAttack()) {
-        lastLungeTick = tickCount;
-      }
-      return;
-    }
-    inv.setSelectedSlot(spear);
+  private boolean showAttack(Minecraft mc, Inventory inv, int shown, int held, int showTicks) {
+    inv.setSelectedSlot(shown);
     boolean accepted = false;
     try {
       ((MultiPlayerGameModeAccessor) mc.gameMode).autoattributes$ensureHasSentCarriedItem();
       accepted = ((MinecraftAccessor) mc).autoattributes$startAttack();
     } finally {
       if (accepted) {
-        lastLungeTick = tickCount;
-        restoreSlot = held;
-        spearShownSlot = spear;
-        restoreAtTick = tickCount + showTicks;
+        timing.showUntilRestore(shown, held, showTicks);
       } else {
         inv.setSelectedSlot(held);
       }
     }
+    return accepted;
   }
 
-  /**
-   * Configured slot if it holds a spear, otherwise the hotbar spear with the highest Lunge level.
-   */
-  private static int findSpear(Minecraft mc, Inventory inv, int configuredSlot) {
-    int size = Inventory.getSelectionSize();
-    if (configuredSlot >= 0
-        && configuredSlot < size
-        && WeaponType.SPEAR.matches(inv.getItem(configuredSlot))) {
-      return configuredSlot;
+  /** Lunge level for a spear (0 if unenchanted), -1 for anything that is not a spear. */
+  private static int spearScore(Minecraft mc, ItemStack stack) {
+    if (!WeaponMatcher.matches(WeaponType.SPEAR, stack)) {
+      return -1;
     }
-    int best = -1;
-    int bestLevel = -1;
-    for (int i = 0; i < size; i++) {
-      ItemStack stack = inv.getItem(i);
-      if (WeaponType.SPEAR.matches(stack)) {
-        int level = lungeLevel(mc, stack);
-        if (level > bestLevel) {
-          best = i;
-          bestLevel = level;
-        }
-      }
-    }
-    return best;
-  }
-
-  private static int lungeLevel(Minecraft mc, ItemStack stack) {
     return mc.level
         .registryAccess()
         .lookupOrThrow(Registries.ENCHANTMENT)
         .get(Enchantments.LUNGE)
         .map(holder -> EnchantmentHelper.getItemEnchantmentLevel(holder, stack))
         .orElse(0);
-  }
-
-  /** Returns whether vanilla accepted the attack. */
-  private static boolean swapAttack(Minecraft mc, Inventory inv, int targetSlot, int originalSlot) {
-    inv.setSelectedSlot(targetSlot);
-    try {
-      ((MultiPlayerGameModeAccessor) mc.gameMode).autoattributes$ensureHasSentCarriedItem();
-      return ((MinecraftAccessor) mc).autoattributes$startAttack();
-    } finally {
-      inv.setSelectedSlot(originalSlot);
-    }
   }
 }

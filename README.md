@@ -11,7 +11,7 @@ Client-side Fabric mod for Minecraft 26.3 that swaps to a second weapon and atta
 
 ## How it works
 
-Pressing the swap key while looking at an entity selects the target weapon's slot, sends the slot change, attacks, and selects the original slot again, all within one client tick. The server applies the target item's enchantments to the attack.
+Pressing the swap key while looking at an entity selects the target weapon's slot, sends the slot change, attacks, and attacks in that same client tick, and keeps the target selected for `showTicks` ticks (default 1) before restoring your slot. The server applies the target item's enchantments to the attack.
 
 The lunge key attacks with a spear and leaves it selected for `showTicks` ticks (default 1) before restoring your slot, so the server sees a normal-looking swap instead of an instant flicker. It skips when sprinting is impossible (low food, riding, gliding, swimming) or the attack cooldown is not ready. If no spear is in the configured slot, it picks the hotbar spear with the highest Lunge level. The visible tick costs roughly one tick of maximum lunge rate.
 
@@ -40,7 +40,7 @@ Settings live in the Mod Menu config screen and are stored in `config/autoattrib
 
 ## Configuration
 
-The swap has: `enabled`, `target` weapon (sword, axe, spear or mace) and `targetSlot`. The lunge has: `enabled`, `spearSlot`, `carrierSlot`, `delayTicks` (0 to 40 extra ticks between lunges) and `showTicks` (1 to 10 ticks the spear stays selected).
+The swap has: `enabled`, `target` weapon (sword, axe, spear or mace), `targetSlot` and `showTicks` (1 to 10 ticks the weapon stays selected). The lunge has: `enabled`, `spearSlot`, `carrierSlot`, `delayTicks` (0 to 40 extra ticks between lunges) and `showTicks` (1 to 10 ticks the spear stays selected).
 
 Set `targetSlot` or `spearSlot` to `-1` (0 in the UI) to always auto-detect the weapon by scanning the hotbar; for the spear this picks the highest Lunge level. A configured slot that holds the wrong item also falls back to this scan.
 

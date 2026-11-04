@@ -1,17 +1,16 @@
 package io.github.ven0m0.autoattributes.client;
 
+import io.github.ven0m0.autoattributes.WeaponType;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-public enum WeaponType {
-  SWORD,
-  AXE,
-  SPEAR,
-  MACE;
+/** Maps the Minecraft-free {@link WeaponType} onto real items. */
+final class WeaponMatcher {
+  private WeaponMatcher() {}
 
-  public boolean matches(ItemStack stack) {
-    return switch (this) {
+  static boolean matches(WeaponType type, ItemStack stack) {
+    return switch (type) {
       case SWORD -> stack.is(ItemTags.SWORDS);
       case AXE -> stack.is(ItemTags.AXES);
       case SPEAR -> stack.is(ItemTags.SPEARS);

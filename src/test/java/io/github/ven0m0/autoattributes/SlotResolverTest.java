@@ -21,6 +21,21 @@ class SlotResolverTest {
   }
 
   @Test
+  void bestScoreWinsTheScanAndTiesGoToLowestSlot() {
+    assertEquals(5, SlotResolver.resolveBest(-1, i -> i == 2 ? 1 : i == 5 || i == 7 ? 3 : -1, 9));
+  }
+
+  @Test
+  void configuredSlotBeatsHigherScoresWhenItMatches() {
+    assertEquals(2, SlotResolver.resolveBest(2, i -> i == 2 ? 0 : 3, 9));
+  }
+
+  @Test
+  void negativeScoreMeansNoMatch() {
+    assertEquals(-1, SlotResolver.resolveBest(0, i -> -1, 9));
+  }
+
+  @Test
   void outOfRangeConfiguredSlotStillScans() {
     assertEquals(3, SlotResolver.resolve(42, i -> i == 3, 9));
     assertEquals(3, SlotResolver.resolve(-1, i -> i == 3, 9));
