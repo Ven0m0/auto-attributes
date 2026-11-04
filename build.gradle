@@ -1,0 +1,103 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+	id 'pmd'
+	id 'com.diffplug.spotless' version "${spotless_version}"
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	maven {
+		name = 'TerraformersMC'
+		url = 'https://maven.terraformersmc.com/'
+	}
+	maven {
+		name = 'Shedaniel'
+		url = 'https://maven.shedaniel.me/'
+	}
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"autoattributes" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Config screen. Required at runtime, so it is declared in fabric.mod.json "depends".
+	implementation "me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}"
+
+	// Mod Menu is optional: compile against it, and load it in dev runs only.
+	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+	localRuntime "com.terraformersmc:modmenu:${project.modmenu_version}"
+
+	// Gson's class files reference these annotations; without them javac -Xlint warns [classfile].
+	compileOnly "com.google.errorprone:error_prone_annotations:${project.error_prone_annotations_version}"
+
+	testImplementation "org.junit.jupiter:junit-jupiter:${project.junit_version}"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher:${project.junit_platform_version}"
+}
+
+processResources {
+	def modVersion = project.version
+	inputs.property "version", modVersion
+
+	filesMatching("fabric.mod.json") {
+		expand "version": modVersion
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+// Formatter: `./gradlew spotlessApply` fixes, `spotlessCheck` (part of `check`) verifies.
+spotless {
+	java {
+		target 'src/**/*.java'
+		googleJavaFormat(project.google_java_format_version)
+	}
+}
+
+// Linter: `./gradlew pmdMain pmdClient pmdTest`, also part of `check`.
+pmd {
+	toolVersion = project.pmd_version
+	ruleSets = []
+	ruleSetFiles = files('config/pmd/ruleset.xml')
+	consoleOutput = true
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
+	from("LICENSE") {
+		rename { "${it}_$projectName" }
+	}
+}

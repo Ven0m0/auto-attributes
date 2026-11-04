@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<ruleset name="auto-attributes"
+		xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+	<description>Bug-finding rules. Formatting is left to Spotless.</description>
+
+	<rule ref="category/java/errorprone.xml">
+		<!-- Mixin accessors are interfaces with no state. -->
+		<exclude name="MissingSerialVersionUID"/>
+	</rule>
+	<rule ref="category/java/bestpractices.xml">
+		<!-- Config and logger classes legitimately log; no System.out is used. -->
+		<exclude name="GuardLogStatement"/>
+		<!-- Hotbar/slot index math reads better with plain loops. -->
+		<exclude name="ForLoopCanBeForeach"/>
+		<!-- Mixin accessor interfaces have one method by design, they are not lambdas targets. -->
+		<exclude name="ImplicitFunctionalInterface"/>
+		<!-- Stylistic test rules: assertEquals(expected, actual) is already self-describing. -->
+		<exclude name="UnitTestAssertionsShouldIncludeMessage"/>
+		<exclude name="UnitTestContainsTooManyAsserts"/>
+	</rule>
+</ruleset>

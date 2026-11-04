@@ -1,0 +1,25 @@
+{
+  "key.category.autoattributes.main": "Auto Attributes",
+  "key.autoattributes.combo1": "Combo 1",
+  "key.autoattributes.combo2": "Combo 2",
+  "key.autoattributes.combo3": "Combo 3",
+  "key.autoattributes.lunge": "Auto Lunge (hold)",
+
+  "autoattributes.config.title": "Auto Attributes",
+  "autoattributes.config.combo": "Combo %s",
+  "autoattributes.config.enabled": "Enabled",
+  "autoattributes.config.source": "Held weapon",
+  "autoattributes.config.source_slot": "Held weapon slot (1-9)",
+  "autoattributes.config.target": "Hit with weapon",
+  "autoattributes.config.target_slot": "Hit weapon slot (1-9)",
+  "autoattributes.config.lunge": "Auto Lunge",
+  "autoattributes.config.spear_slot": "Spear slot (1-9)",
+  "autoattributes.config.carrier_slot": "Carrier slot (0 = currently held)",
+  "autoattributes.config.delay": "Extra delay (ticks)",
+  "autoattributes.config.delay.tooltip": "0 = as fast as the carrier's attack cooldown allows.",
+
+  "autoattributes.weapon.sword": "Sword",
+  "autoattributes.weapon.axe": "Axe",
+  "autoattributes.weapon.spear": "Spear",
+  "autoattributes.weapon.mace": "Mace"
+}

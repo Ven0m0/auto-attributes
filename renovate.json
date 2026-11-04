@@ -1,0 +1,57 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "minimumReleaseAge": "0 days",
+  "automerge": true,
+  "automergeType": "branch",
+  "ignoreTests": true,
+  "schedule": ["at any time"],
+  "automergeSchedule": ["at any time"],
+  "dependencyDashboardApproval": false,
+  "prCreation": "approval",
+  "configMigration": false,
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "branchConcurrentLimit": 0,
+  "packageRules": [
+    {
+      "description": "Apply all eligible updates directly to the base branch without automatic pull requests",
+      "matchPackageNames": ["*"],
+      "automerge": true,
+      "automergeType": "branch",
+      "ignoreTests": true,
+      "schedule": ["at any time"],
+      "automergeSchedule": ["at any time"],
+      "minimumReleaseAge": "0 days",
+      "dependencyDashboardApproval": false,
+      "prCreation": "approval"
+    },
+    {
+      "description": "Automerge lock file maintenance with an automatic PR fallback",
+      "matchUpdateTypes": ["lockFileMaintenance"],
+      "automerge": true,
+      "automergeType": "branch",
+      "ignoreTests": true,
+      "platformAutomerge": false,
+      "prCreation": "immediate",
+      "dependencyDashboardApproval": false,
+      "recreateWhen": "always",
+      "pruneBranchAfterAutomerge": true
+    },
+    {
+      "description": "Automerge pre-commit hooks with an automatic PR fallback",
+      "matchManagers": ["pre-commit"],
+      "automerge": true,
+      "automergeType": "branch",
+      "ignoreTests": true,
+      "platformAutomerge": false,
+      "prCreation": "immediate",
+      "dependencyDashboardApproval": false,
+      "recreateWhen": "always",
+      "pruneBranchAfterAutomerge": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "prCreation": "approval"
+  }
+}

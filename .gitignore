@@ -1,0 +1,74 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+
+# Kotlin
+.kotlin/
+
+# IDE - IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# IDE - Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# IDE - VSCode
+.vscode/
+.vscode-test/
+
+# IDE - NetBeans
+nbproject/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# Minecraft / Modding
+run/
+runs/
+**/run/
+**/runs/
+logs/
+crash-reports/
+saves/
+
+# Extracted third-party jars / loader leftovers
+/META-INF/
+/gg/
+/essential-loader.properties
+/essential-loader-stage2.properties
+*.class
+
+# Loader-specific caches
+.fabric/
+remappedSrc/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Binaries (don't commit prebuilt jars, allow wrapper and libs)
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+!libs/*.jar
+
+# Temp
+*.log
+*.bak
+*.swp
+*~
+libs/essential*.jar
+libs/elementa*.jar
+
+.omc*
+.codegraph/
+.serena/
+.claude/context-archive/

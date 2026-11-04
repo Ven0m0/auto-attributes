@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "autoattributes",
+  "version": "${version}",
+  "name": "Auto Attributes",
+  "description": "Configurable one-key attribute swapping (Sword->Mace, Spear->Mace, Axe->Sword) and auto spear lunging.",
+  "authors": ["Ven0m0"],
+  "contact": {
+    "sources": "https://github.com/Ven0m0/auto-attributes"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["io.github.ven0m0.autoattributes.client.AutoAttributesClient"],
+    "modmenu": ["io.github.ven0m0.autoattributes.client.ModMenuIntegration"]
+  },
+  "mixins": [
+    {
+      "config": "autoattributes.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*",
+    "cloth-config": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}

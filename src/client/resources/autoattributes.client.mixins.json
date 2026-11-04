@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "io.github.ven0m0.autoattributes.client.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["MinecraftAccessor", "MultiPlayerGameModeAccessor"],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
