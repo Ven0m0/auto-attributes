@@ -3,7 +3,6 @@ package io.github.ven0m0.autoattributes.client;
 import io.github.ven0m0.autoattributes.SlotResolver;
 import io.github.ven0m0.autoattributes.client.mixin.MinecraftAccessor;
 import io.github.ven0m0.autoattributes.client.mixin.MultiPlayerGameModeAccessor;
-import java.util.List;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -15,21 +14,27 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.HitResult;
 
 /**
- * Runs at the start of each client tick, before vanilla handles input. A swap-attack selects the
- * target slot, flushes the slot packet, attacks, and selects the original slot again, all inside
- * one tick, so the server applies the target item's enchantments to the original item's attack.
+ * Runs at the start of each client tick, before vanilla handles input. The attribute swap selects
+ * the target slot, flushes the slot packet, attacks, and selects the original slot again, all
+ * inside one tick, so the server applies the target item's enchantments to the held item's attack.
+ * The lunge instead keeps the spear selected for a few ticks after the jab, so the slot change is
+ * visible to the server like a human swap rather than an instantaneous flicker.
  */
 public final class SwapController {
   /** Food level below which sprinting (and therefore lunging) is impossible. */
   private static final int MIN_LUNGE_FOOD = 7;
 
-  private final List<KeyMapping> comboKeys;
+  private final KeyMapping swapKey;
   private final KeyMapping lungeKey;
   private long tickCount;
   private long lastLungeTick = Long.MIN_VALUE / 2;
+  // Pending lunge restore; restoreSlot < 0 means none.
+  private int restoreSlot = -1;
+  private int spearShownSlot;
+  private long restoreAtTick;
 
-  public SwapController(List<KeyMapping> comboKeys, KeyMapping lungeKey) {
-    this.comboKeys = List.copyOf(comboKeys);
+  public SwapController(KeyMapping swapKey, KeyMapping lungeKey) {
+    this.swapKey = swapKey;
     this.lungeKey = lungeKey;
   }
 
@@ -37,24 +42,31 @@ public final class SwapController {
     tickCount++;
 
     // Drain presses first so keys pressed while a screen is open do not fire later.
-    boolean[] comboPressed = new boolean[comboKeys.size()];
-    for (int i = 0; i < comboKeys.size(); i++) {
-      while (comboKeys.get(i).consumeClick()) {
-        comboPressed[i] = true;
-      }
+    boolean swapPressed = false;
+    while (swapKey.consumeClick()) {
+      swapPressed = true;
     }
 
     LocalPlayer player = mc.player;
+    if (restoreSlot >= 0) {
+      if (tickCount < restoreAtTick) {
+        return;
+      }
+      // Skip the restore if the player scrolled away meanwhile; do not fight manual input.
+      if (player != null && player.getInventory().getSelectedSlot() == spearShownSlot) {
+        player.getInventory().setSelectedSlot(restoreSlot);
+      }
+      restoreSlot = -1;
+    }
+
     if (player == null || mc.gameMode == null || mc.gui.screen() != null || player.isUsingItem()) {
       return;
     }
 
     ModConfig config = ModConfig.get();
-    for (int i = 0; i < comboPressed.length; i++) {
-      if (comboPressed[i] && config.combos().get(i).enabled()) {
-        runCombo(mc, player, config.combos().get(i));
-        return;
-      }
+    if (swapPressed && config.swap().enabled()) {
+      runSwap(mc, player, config.swap());
+      return;
     }
 
     if (config.lunge().enabled() && lungeKey.isDown()) {
@@ -62,33 +74,18 @@ public final class SwapController {
     }
   }
 
-  private void runCombo(Minecraft mc, LocalPlayer player, ModConfig.Combo combo) {
-    Inventory inv = player.getInventory();
-    int held = inv.getSelectedSlot();
-
-    if (!combo.source().matches(inv.getItem(held))) {
-      // Not holding the source weapon yet: this press only equips it, because switching resets
-      // charge.
-      int source =
-          SlotResolver.resolve(
-              combo.sourceSlot(),
-              i -> combo.source().matches(inv.getItem(i)),
-              Inventory.getSelectionSize());
-      if (source >= 0) {
-        inv.setSelectedSlot(source);
-      }
-      return;
-    }
-
+  private void runSwap(Minecraft mc, LocalPlayer player, ModConfig.Swap swap) {
     if (mc.hitResult == null || mc.hitResult.getType() != HitResult.Type.ENTITY) {
       return;
     }
+    Inventory inv = player.getInventory();
+    int held = inv.getSelectedSlot();
     int target =
         SlotResolver.resolve(
-            combo.targetSlot(),
-            i -> combo.target().matches(inv.getItem(i)),
+            swap.targetSlot(),
+            i -> swap.target().matches(inv.getItem(i)),
             Inventory.getSelectionSize());
-    if (target >= 0) {
+    if (target >= 0 && target != held) {
       swapAttack(mc, inv, target, held);
     }
   }
@@ -120,9 +117,34 @@ public final class SwapController {
     if (spear < 0) {
       return;
     }
-    // Only a jab that vanilla actually started restarts the delay window.
-    if (swapAttack(mc, inv, spear, held)) {
-      lastLungeTick = tickCount;
+    lungeAttack(mc, inv, spear, held, lunge.showTicks());
+  }
+
+  /**
+   * Attacks with the spear and leaves it selected until a later tick. A jab vanilla rejected is
+   * restored at once, since showing a spear that did nothing only looks odd.
+   */
+  private void lungeAttack(Minecraft mc, Inventory inv, int spear, int held, int showTicks) {
+    if (spear == held) {
+      if (((MinecraftAccessor) mc).autoattributes$startAttack()) {
+        lastLungeTick = tickCount;
+      }
+      return;
+    }
+    inv.setSelectedSlot(spear);
+    boolean accepted = false;
+    try {
+      ((MultiPlayerGameModeAccessor) mc.gameMode).autoattributes$ensureHasSentCarriedItem();
+      accepted = ((MinecraftAccessor) mc).autoattributes$startAttack();
+    } finally {
+      if (accepted) {
+        lastLungeTick = tickCount;
+        restoreSlot = held;
+        spearShownSlot = spear;
+        restoreAtTick = tickCount + showTicks;
+      } else {
+        inv.setSelectedSlot(held);
+      }
     }
   }
 

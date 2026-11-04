@@ -8,24 +8,24 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Immutable config. Slots are 0-based here (1-9 in the UI). A {@code carrierSlot} of -1 means
- * "whatever slot is currently held".
+ * "whatever slot is currently held". A {@code targetSlot} or {@code spearSlot} of -1 means
+ * "auto-detect by scanning the hotbar".
  */
-public record ModConfig(List<Combo> combos, Lunge lunge) {
-  public static final int COMBO_COUNT = 3;
+public record ModConfig(Swap swap, Lunge lunge) {
   public static final int MAX_DELAY_TICKS = 40;
+  public static final int MAX_SHOW_TICKS = 10;
 
-  public record Combo(
-      boolean enabled, WeaponType source, int sourceSlot, WeaponType target, int targetSlot) {}
+  public record Swap(boolean enabled, WeaponType target, int targetSlot) {}
 
-  public record Lunge(boolean enabled, int spearSlot, int carrierSlot, int delayTicks) {}
+  /** {@code showTicks} is how many ticks the spear stays selected after the jab. */
+  public record Lunge(
+      boolean enabled, int spearSlot, int carrierSlot, int delayTicks, int showTicks) {}
 
   private static final Logger LOGGER = LoggerFactory.getLogger("autoattributes");
   private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -36,38 +36,25 @@ public record ModConfig(List<Combo> combos, Lunge lunge) {
   }
 
   public static ModConfig defaults() {
-    return new ModConfig(
-        List.of(
-            new Combo(true, WeaponType.SWORD, 0, WeaponType.MACE, 8),
-            new Combo(true, WeaponType.SPEAR, 1, WeaponType.MACE, 8),
-            new Combo(true, WeaponType.AXE, 2, WeaponType.SWORD, 0)),
-        new Lunge(true, 1, -1, 0));
+    return new ModConfig(new Swap(true, WeaponType.MACE, 8), new Lunge(true, 1, -1, 0, 1));
   }
 
   /** Clamps every value and fills anything missing from a hand-edited or partial file. */
   public ModConfig sanitized() {
     ModConfig defaults = defaults();
-    List<Combo> cleaned = new ArrayList<>(COMBO_COUNT);
-    for (int i = 0; i < COMBO_COUNT; i++) {
-      Combo fallback = defaults.combos.get(i);
-      Combo c =
-          combos != null && i < combos.size() && combos.get(i) != null ? combos.get(i) : fallback;
-      cleaned.add(
-          new Combo(
-              c.enabled,
-              c.source != null ? c.source : fallback.source,
-              clamp(c.sourceSlot, 0, 8),
-              c.target != null ? c.target : fallback.target,
-              clamp(c.targetSlot, 0, 8)));
-    }
+    Swap s = swap != null ? swap : defaults.swap;
     Lunge l = lunge != null ? lunge : defaults.lunge;
     return new ModConfig(
-        List.copyOf(cleaned),
+        new Swap(
+            s.enabled,
+            s.target != null ? s.target : defaults.swap.target,
+            clamp(s.targetSlot, -1, 8)),
         new Lunge(
             l.enabled,
-            clamp(l.spearSlot, 0, 8),
+            clamp(l.spearSlot, -1, 8),
             clamp(l.carrierSlot, -1, 8),
-            clamp(l.delayTicks, 0, MAX_DELAY_TICKS)));
+            clamp(l.delayTicks, 0, MAX_DELAY_TICKS),
+            clamp(l.showTicks, 1, MAX_SHOW_TICKS)));
   }
 
   private static int clamp(int v, int min, int max) {

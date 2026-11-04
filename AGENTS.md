@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Client-only Fabric mod (id `autoattributes`) for Minecraft 26.3: one-key weapon swap-attacks and auto spear lunge. See README.md for user-facing behavior.
+Client-only Fabric mod (id `autoattributes`) for Minecraft 26.3: one-key attribute swap-attack and auto spear lunge. See README.md for user-facing behavior.
 
 ## Commands
 
@@ -29,8 +29,8 @@ Run `spotlessApply` before committing; `spotlessCheck` is part of `build` and fa
 ## Gotchas
 
 - Slots are 0-based in code and JSON, 1-9 in the UI. `carrierSlot == -1` means "currently held slot".
-- A swap-attack must stay inside one tick: select target slot, flush the slot packet, attack, restore the original slot. Do not split it across ticks or the enchantment trick breaks.
-- A combo press with the wrong weapon held only equips the source weapon (switching resets charge); it does not attack.
+- The attribute swap must stay inside one tick: select target slot, flush the slot packet, attack, restore the original slot. Do not split it across ticks or the enchantment trick breaks.
+- The lunge deliberately does the opposite: it attacks with the spear selected and restores the original slot `showTicks` ticks later (skipped if the player scrolled away), so the spear is visible to anticheats.
 - Config is hand-editable, so any new field needs a default and clamping in `sanitized()`.
 - Java 25 target; Minecraft 26.3 uses Mojang mappings names (`Identifier`, `KeyMapping`), not Yarn. Check names against the current game version before assuming an API exists.
 - `fabric_api_version` is pinned to the 26.3 build and Renovate updates for it are disabled; do not bump it to a 26.4 build.

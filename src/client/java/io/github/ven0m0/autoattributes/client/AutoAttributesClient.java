@@ -1,8 +1,6 @@
 package io.github.ven0m0.autoattributes.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import java.util.ArrayList;
-import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -19,13 +17,10 @@ public class AutoAttributesClient implements ClientModInitializer {
     KeyMapping.Category category =
         KeyMapping.Category.register(Identifier.fromNamespaceAndPath(MOD_ID, "main"));
 
-    List<KeyMapping> comboKeys = new ArrayList<>(ModConfig.COMBO_COUNT);
-    for (int i = 1; i <= ModConfig.COMBO_COUNT; i++) {
-      comboKeys.add(register("key." + MOD_ID + ".combo" + i, category));
-    }
+    KeyMapping swapKey = register("key." + MOD_ID + ".swap", category);
     KeyMapping lungeKey = register("key." + MOD_ID + ".lunge", category);
 
-    SwapController controller = new SwapController(comboKeys, lungeKey);
+    SwapController controller = new SwapController(swapKey, lungeKey);
     ClientTickEvents.START_CLIENT_TICK.register(controller::tick);
   }
 
