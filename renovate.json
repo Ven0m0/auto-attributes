@@ -71,6 +71,11 @@
       "dependencyDashboardApproval": false,
       "recreateWhen": "always",
       "pruneBranchAfterAutomerge": true
+    },
+    {
+      "description": "Pinned to the Minecraft 26.3 build; do not move to a newer game version",
+      "matchPackageNames": ["net.fabricmc.fabric-api:fabric-api"],
+      "enabled": false
     }
   ],
   "vulnerabilityAlerts": {
