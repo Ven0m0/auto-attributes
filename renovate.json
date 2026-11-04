@@ -15,6 +15,28 @@
   "branchConcurrentLimit": 0,
   "packageRules": [
     {
+      "description": "Renovate only reads the repositories block of build.gradle (TerraformersMC, Shedaniel), so name the real registries for the other dependencies",
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["net.fabricmc:fabric-loader", "net.fabricmc.fabric-api:fabric-api"],
+      "registryUrls": ["https://maven.fabricmc.net/", "https://repo.maven.apache.org/maven2/"]
+    },
+    {
+      "matchManagers": ["gradle"],
+      "matchPackageNames": [
+        "com.google.errorprone:error_prone_annotations",
+        "org.junit.jupiter:junit-jupiter",
+        "org.junit.platform:junit-platform-launcher",
+        "net.sourceforge.pmd:pmd-java"
+      ],
+      "registryUrls": ["https://repo.maven.apache.org/maven2/"]
+    },
+    {
+      "description": "com.mojang:minecraft is synthesized by Loom and is not published to any Maven repository",
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["com.mojang:minecraft"],
+      "enabled": false
+    },
+    {
       "description": "Apply all eligible updates directly to the base branch without automatic pull requests",
       "matchPackageNames": ["*"],
       "automerge": true,
